@@ -120,6 +120,12 @@ async def _check_slot_free(session: AsyncSession, start_time, end_time) -> bool:
 
 
 async def _create_booking(session: AsyncSession, background_tasks: BackgroundTasks, payload: BookingCreate) -> Booking:
+    start_time = payload.start_time
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=timezone.utc)
+    if start_time <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="That time has already passed. Please choose a future time.")
+
     if not await _check_slot_free(session, payload.start_time, payload.end_time):
         raise HTTPException(status_code=409, detail="That time slot is already booked")
 
@@ -349,6 +355,8 @@ async def public_chat(
                 end = _local_to_utc(args["end_time"])
             except (KeyError, ValueError):
                 return {"error": "invalid start_time/end_time"}
+            if start <= datetime.now(timezone.utc):
+                return {"error": "That time has already passed. Ask the customer for a future time."}
             free = await _check_slot_free(session, start, end)
             if free:
                 checked_available_slots.append((start, end))
