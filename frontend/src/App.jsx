@@ -103,12 +103,32 @@ function AdminArea() {
   );
 }
 
+const MODE_STORAGE_KEY = 'view_mode';
+
 function Shell() {
-  const [mode, setMode] = useState('customer');
+  const [mode, setMode] = useState(() => {
+    try {
+      return localStorage.getItem(MODE_STORAGE_KEY) === 'admin' ? 'admin' : 'customer';
+    } catch {
+      return 'customer';
+    }
+  });
+
+  const toggleMode = () => {
+    setMode((m) => {
+      const next = m === 'admin' ? 'customer' : 'admin';
+      try {
+        localStorage.setItem(MODE_STORAGE_KEY, next);
+      } catch {
+        // ignore storage errors (private browsing, etc.)
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="page">
-      <Header mode={mode} onToggleMode={() => setMode((m) => (m === 'admin' ? 'customer' : 'admin'))} />
+      <Header mode={mode} onToggleMode={toggleMode} />
       {mode === 'admin' ? <AdminArea /> : <CustomerFlow />}
       <Footer />
     </div>
